@@ -279,11 +279,6 @@ static int fatal_error_code;
 /* Nonzero if handling a fatal error already.  */
 int fatal_error_in_progress;
 
-/* If non-null, call this function from fatal_error_signal before
-   committing suicide.  */
-
-static void (*fatal_error_signal_hook) (void);
-
 #ifdef FORWARD_SIGNAL_TO_MAIN_THREAD
 /* When compiled with GTK and running under Gnome,
    multiple threads may be created.  Keep track of our main
@@ -330,9 +325,6 @@ fatal_error_signal (int sig)
 #ifndef MSDOS
   sigunblock (sigmask (fatal_error_code));
 #endif
-
-  if (fatal_error_signal_hook)
-    fatal_error_signal_hook ();
 
   kill (getpid (), fatal_error_code);
 }
@@ -642,10 +634,6 @@ argmatch (char **argv, int argc, const char *sstr, const char *lstr,
 static void
 malloc_initialize_hook (void)
 {
-#ifndef USE_CRT_DLL
-  extern char **environ;
-#endif
-
   if (initialized)
     {
       if (!malloc_using_checking)
