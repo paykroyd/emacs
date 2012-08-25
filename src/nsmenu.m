@@ -1017,7 +1017,7 @@ free_frame_tool_bar (FRAME_PTR f)
    -------------------------------------------------------------------------- */
 {
   BLOCK_INPUT;
-  [[FRAME_NS_VIEW (f) toolbar] setVisible: NO];
+  [[FRAME_NS_VIEW (f) window] setToolbar: nil];
   FRAME_TOOLBAR_HEIGHT (f) = 0;
   UNBLOCK_INPUT;
 }
@@ -1034,6 +1034,8 @@ update_frame_tool_bar (FRAME_PTR f)
   EmacsToolbar *toolbar = [view toolbar];
 
   BLOCK_INPUT;
+  [window setToolbar: toolbar];
+
   [toolbar clearActive];
 
   /* update EmacsToolbar as in GtkUtils, build items list */

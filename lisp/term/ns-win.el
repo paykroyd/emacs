@@ -928,6 +928,10 @@ See the documentation of `create-fontset-from-fontset-spec' for the format.")
 (add-to-list 'frame-creation-function-alist '(ns . x-create-frame-with-faces))
 (add-to-list 'window-system-initialization-alist '(ns . ns-initialize-window-system))
 
+(declare-function ns-toggle-fullscreen-internal "nsfns.m" ())
+(defun ns-toggle-fullscreen ()
+  (interactive)
+  (ns-toggle-fullscreen-internal))
 
 (provide 'ns-win)
 

@@ -2604,6 +2604,22 @@ Value is t if tooltip was open, nil otherwise.  */)
 }
 
 
+DEFUN ("ns-toggle-fullscreen-internal", Fns_toggle_fullscreen_internal, Sns_toggle_fullscreen_internal,
+        0, 0, 0,
+        doc: /* Toggle fulscreen mode */)
+()
+{
+  struct frame *f = SELECTED_FRAME();
+  EmacsWindow *window = ns_get_window(f);
+
+#if defined (NS_IMPL_COCOA) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
+  [window toggleFullScreen:nil];
+#endif
+
+  return Qnil;
+}
+
+
 /* ==========================================================================
 
     Class implementations
@@ -2758,6 +2774,8 @@ be used as the image of the icon representing the frame.  */);
 
   defsubr (&Sx_show_tip);
   defsubr (&Sx_hide_tip);
+
+  defsubr (&Sns_toggle_fullscreen_internal);
 
   /* used only in fontset.c */
   check_window_system_func = check_ns;

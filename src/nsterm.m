@@ -5439,38 +5439,6 @@ not_in_argv (NSString *arg)
 #endif
   if (rows < MINHEIGHT)
     rows = MINHEIGHT;
-#ifdef NS_IMPL_COCOA
-  {
-    /* this sets window title to have size in it; the wm does this under GS */
-    NSRect r = [[self window] frame];
-    if (r.size.height == frameSize.height && r.size.width == frameSize.width)
-      {
-        if (old_title != 0)
-          {
-            xfree (old_title);
-            old_title = 0;
-          }
-      }
-    else
-      {
-        char *size_title;
-        NSWindow *window = [self window];
-        if (old_title == 0)
-          {
-            const char *t = [[[self window] title] UTF8String];
-            char *pos = strstr (t, "  —  ");
-            if (pos)
-              *pos = '\0';
-            old_title = xstrdup (t);
-          }
-        size_title = xmalloc (strlen (old_title) + 40);
-	esprintf (size_title, "%s  —  (%d x %d)", old_title, cols, rows);
-        [window setTitle: [NSString stringWithUTF8String: size_title]];
-        [window display];
-        xfree (size_title);
-      }
-  }
-#endif /* NS_IMPL_COCOA */
 /*fprintf (stderr,"    ...size became %.0f x %.0f  (%d x %d)\n",frameSize.width,frameSize.height,cols,rows); */
 
   return frameSize;
@@ -5491,14 +5459,6 @@ not_in_argv (NSString *arg)
 
   NSTRACE (windowDidResize);
 /*fprintf (stderr,"windowDidResize: %.0f\n",[theWindow frame].size.height); */
-
-#ifdef NS_IMPL_COCOA
-  if (old_title != 0)
-    {
-      xfree (old_title);
-      old_title = 0;
-    }
-#endif /* NS_IMPL_COCOA */
 
   /* Avoid loop under GNUstep due to call at beginning of this function.
      (x_set_window_size causes a resize which causes
@@ -5526,6 +5486,60 @@ not_in_argv (NSString *arg)
 
   ns_send_appdefined (-1);
 }
+
+#if defined (NS_IMPL_COCOA) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
+- (void)windowDidEnterFullScreen:(NSNotification *)notification
+{
+    NSTRACE (windowDidEnterFullScreen);
+    /* NSLog(@"Calling windowDidEnterFullScreen"); */
+    
+    NSWindow *window = [self window];
+    NSRect wr = [window frame];
+    int w = (int)wr.size.width - emacsframe->border_width;
+    int h = (int)wr.size.height;
+    cols = FRAME_PIXEL_WIDTH_TO_TEXT_COLS(emacsframe, w);
+    rows = FRAME_PIXEL_HEIGHT_TO_TEXT_LINES(emacsframe, h);
+    /* NSLog(@"window_size=%dx%d (%dx%d)", w, h, cols, rows); */
+    FRAME_PIXEL_WIDTH (emacsframe) = w;
+    FRAME_PIXEL_HEIGHT (emacsframe) = h;
+    change_frame_size (emacsframe, rows, cols, 0, 1, 0);
+    SET_FRAME_GARBAGED (emacsframe);
+    cancel_mouse_face (emacsframe);
+    ns_send_appdefined (-1);
+}
+#endif
+
+#if defined (NS_IMPL_COCOA) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
+- (void)windowDidExitFullScreen:(NSNotification *)notification
+{
+    NSTRACE (windowDidExitFullScreen);
+    /* NSLog(@"Calling windowDidExitFullScreen"); */
+    
+    NSWindow *window = [self window];
+    NSRect wr = [window frame];
+    int w = (int)wr.size.width - emacsframe->border_width;
+    int h = (int)wr.size.height
+    - FRAME_NS_TITLEBAR_HEIGHT (emacsframe)
+    - FRAME_TOOLBAR_HEIGHT (emacsframe);
+    cols = FRAME_PIXEL_WIDTH_TO_TEXT_COLS(emacsframe, w);
+    rows = FRAME_PIXEL_HEIGHT_TO_TEXT_LINES(emacsframe, h);
+    /* NSLog(@"window_size=%dx%d (%dx%d)", w, h, cols, rows); */
+    FRAME_PIXEL_WIDTH (emacsframe) = w;
+    FRAME_PIXEL_HEIGHT (emacsframe) = h;
+    change_frame_size (emacsframe, rows, cols, 0, 1, 0);
+    SET_FRAME_GARBAGED (emacsframe);
+    cancel_mouse_face (emacsframe);
+    ns_send_appdefined (-1);
+}
+#endif
+
+#if defined (NS_IMPL_COCOA) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
+- (NSApplicationPresentationOptions)window:(NSWindow *)window willUseFullScreenPresentationOptions:(NSApplicationPresentationOptions)proposedOptions
+{
+    /* NSLog(@"Calling window:willUseFullScreenPresentationOptions: %d", proposedOptions); */
+    return proposedOptions | NSApplicationPresentationAutoHideToolbar;
+}
+#endif
 
 
 - (void)windowDidBecomeKey: (NSNotification *)notification
@@ -5696,6 +5710,14 @@ not_in_argv (NSString *arg)
 
   [NSApp registerServicesMenuSendTypes: ns_send_types
                            returnTypes: nil];
+
+#if defined (NS_IMPL_COCOA) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
+  if (NSApp != nil)
+  {
+    [NSApp setPresentationOptions: NSApplicationPresentationFullScreen | [NSApp presentationOptions] ];
+    [win setCollectionBehavior: NSWindowCollectionBehaviorFullScreenPrimary | [win collectionBehavior] ];
+  }
+#endif
 
   ns_window_num++;
   return self;
